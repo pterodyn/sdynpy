@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .core import coordinate, colors, array, geometry, shape, data, system, matrix_mod, system_nl
-from .fileio import unv, uff, rattlesnake, vic, tshaker, pdf3D, escdf, mystran
+from .fileio import unv, uff, rattlesnake, vic, tshaker, pdf3D, escdf, mystran, nastran
 from .fem.sdynpy_exodus import Exodus, ExodusInMemory, read_sierra_matlab_map_file, read_sierra_matlab_matrix_file
 from .fem import sdynpy_beam as beam
 from .fem import sdynpy_shaker as shaker
