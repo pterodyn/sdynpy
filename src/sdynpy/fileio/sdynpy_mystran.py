@@ -18,6 +18,7 @@ with the Nastran reader, see sdynpy_nastran_common.
 """
 
 import re
+import warnings
 
 import numpy as np
 from scipy.io import FortranEOFError, FortranFile
@@ -183,21 +184,32 @@ def read_mystran(basename, source='f06', damping=0.0):
         .dat, .F06 and .OU4 files are expected next to each other.
     source : str, optional
         'f06' or 'ou4', which file to read the modes from.  The default is
-        'f06'.
+        'f06'.  Use 'none', '' or None to read only the geometry.  If the
+        results file is not found, only the geometry is read and a warning
+        is issued.
     damping : float, optional
         Fraction of critical damping assigned to every mode.
 
     Returns
     -------
     geometry : Geometry
-    shapes : ShapeArray
+    shapes : ShapeArray or None
+        None if no results were read.
     """
     model = read_dat(find_file(basename, '.dat'))
     geometry = geometry_from_model(model)
-    if source.lower() == 'f06':
-        shapes = shapes_from_modes(read_f06(find_file(basename, '.F06')), model, damping)
-    elif source.lower() == 'ou4':
-        shapes = shapes_from_ou4(read_ou4(find_file(basename, '.OU4')), model, damping)
+    src = (source or 'none').lower()
+    if src == 'none':
+        return geometry, None
+    if src not in ('f06', 'ou4'):
+        raise ValueError("source must be 'f06', 'ou4', 'none' or ''")
+    try:
+        path = find_file(basename, '.' + src)
+    except FileNotFoundError as e:
+        warnings.warn('Results file {:} not found, only the geometry was read'.format(e))
+        return geometry, None
+    if src == 'f06':
+        shapes = shapes_from_modes(read_f06(path), model, damping)
     else:
-        raise ValueError("source must be 'f06' or 'ou4'")
+        shapes = shapes_from_ou4(read_ou4(path), model, damping)
     return geometry, shapes

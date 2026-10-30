@@ -11,6 +11,7 @@ sdynpy_nastran_common for the supported bulk data syntax and elements.
 """
 
 import re
+import warnings
 
 import numpy as np
 
@@ -125,21 +126,30 @@ def read_nastran(basename, source='f06', damping=0.0):
     basename : str
         Path to the model without extension (or to the .dat file).
     source : str, optional
-        'f06' or 'pch', which file to read the modes from.  The default is 'f06'.
+        'f06' or 'pch', which file to read the modes from.  The default is
+        'f06'.  Use 'none', '' or None to read only the geometry.  If the
+        results file is not found, only the geometry is read and a warning
+        is issued.
     damping : float, optional
         Fraction of critical damping assigned to every mode.
 
     Returns
     -------
     geometry : Geometry
-    shapes : ShapeArray
+    shapes : ShapeArray or None
+        None if no results were read.
     """
     model = read_dat(find_file(basename, '.dat'))
     geometry = geometry_from_model(model)
-    if source.lower() == 'f06':
-        modes = read_f06(find_file(basename, '.f06'))
-    elif source.lower() == 'pch':
-        modes = read_pch(find_file(basename, '.pch'))
-    else:
-        raise ValueError("source must be 'f06' or 'pch'")
+    src = (source or 'none').lower()
+    if src == 'none':
+        return geometry, None
+    if src not in ('f06', 'pch'):
+        raise ValueError("source must be 'f06', 'pch', 'none' or ''")
+    try:
+        path = find_file(basename, '.' + src)
+    except FileNotFoundError as e:
+        warnings.warn('Results file {:} not found, only the geometry was read'.format(e))
+        return geometry, None
+    modes = read_f06(path) if src == 'f06' else read_pch(path)
     return geometry, shapes_from_modes(modes, model, damping)
